@@ -73,32 +73,22 @@ class Produtos:
         try:
           with open("produtos.txt", "r") as arquivo:
             lista = arquivo.readlines()
-            fatiamento = ""
-            produto = ""
             verificar = False
             for i in range(len(lista)):
                 if nome.lower() in lista[i].lower():
                     verificar = True
-                    linha = lista[i]
-                    indice = i
-                    for letra in linha:
-                        if letra != "|":
-                            fatiamento += letra
-                        else:
-                            produto += fatiamento + "|"
-                            fatiamento = ""
-                            if produto.count("|") == 2:
-                                produto += f" Estoque: {estoque}\n"
-                                break
-            if verificar == False:
+                    partes = lista[i].strip().split(" | ") #o split vai seprar cada parte de acordo com o delimitador " | " e vai transformar numa lista
+                    for j in range(len(partes)):
+                        if partes[j].startswith("Estoque:"): #o startswith() verifica se partes[j] começa com o conteúdo que eu coloquei como parâmetro
+                           partes[j] = f"Estoque: {estoque}"
+                    lista[i] = " | ".join(partes) + "\n" #o join serve pra juntar os indices de uma lista em uma única string e colocar algo entre eles, nesse caso o " | "
+                    break
+            if not verificar: #se verificar for False
                 print("Nenhum produto encontrado.\n")
-                return
-            del lista[indice]
-            lista.append(produto)
+                return   
           with open("produtos.txt", "w") as arquivo:
-            for i in range(len(lista)):
-                arquivo.write(lista[i])
-            print("Estoque atualizado com sucesso!\n")
+              arquivo.writelines(lista) #pega cada indice da lista e escreve em cada linha do arquivo 
+              print("Estoque atualizado com sucesso!\n")
         except FileNotFoundError:
             print("Nenhum produto cadastrado.\n")          
 
