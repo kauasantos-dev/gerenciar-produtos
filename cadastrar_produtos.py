@@ -11,10 +11,10 @@ class Produtos:
         self.dicionario = {'Produto': nome, 'Preço': preco, 'Estoque': estoque} 
         try:
             with open("produtos.txt", "x") as arquivo:
-                arquivo.write(f"{self.dicionario['Produto']} | Preço: R${self.dicionario['Preço']:.2f} | Estoque: {self.dicionario['Estoque']:.2f}\n")
+                arquivo.write(f"{self.dicionario['Produto']} | Preço: R${self.dicionario['Preço']:.2f} | Estoque: {self.dicionario['Estoque']}\n")
         except FileExistsError:          
             with open("produtos.txt", "a") as arquivo:
-                arquivo.write(f"{self.dicionario['Produto']} | Preço: R${self.dicionario['Preço']:.2f} | Estoque: {self.dicionario['Estoque']:.2f}\n")
+                arquivo.write(f"{self.dicionario['Produto']} | Preço: R${self.dicionario['Preço']:.2f} | Estoque: {self.dicionario['Estoque']}\n")
         print("\nProduto adicionado com sucesso!\n")
     
     def ver_produtos(self):
@@ -23,7 +23,7 @@ class Produtos:
                 conteudo = arquivo.readlines()
                 arquivo.seek(0)
                 if not conteudo:
-                    print("\nNão há produtos cadastrados.\n")
+                    print("Erro: Não há produtos cadastrados.\n")
                     return
                 else:
                   print("\nProdutos cadastrados:")
@@ -31,20 +31,21 @@ class Produtos:
                       if linha:
                           print(linha.strip())
         except FileNotFoundError:
-            print("\nNão há produtos cadastrados.\n")
+            print("Erro: Não há produtos cadastrados.\n")
 
     def buscar(self, nome):
         nome = self.validar_nome(nome)
         try:
             with open("produtos.txt", "r") as arquivo:
                 for linha in arquivo:
-                    if nome.lower() in linha.lower():
+                    partes = linha.strip().split(" | ")
+                    if nome.lower() == partes[0].lower():
                         print("\nProduto encontrado:")
                         print(f"{linha}")
                         return
                 print("\nNenhum produto encontrado.\n")
         except FileNotFoundError:
-            print("\nNão há produtos cadastrados.\n")
+            print("Erro: Não há produtos cadastrados.\n")
 
     def excluir(self, nome):
         nome = self.validar_nome(nome)
@@ -53,19 +54,20 @@ class Produtos:
             with open("produtos.txt", "r+") as arquivo:
                 lista = arquivo.readlines()
                 for i in range(len(lista)):
-                    if nome.lower() in lista[i].lower():
+                    partes = lista[i].strip().split(" | ")
+                    if nome.lower() == partes[0].lower():
                         del lista[i]
                         print("Produto excluído com sucesso!\n")
                         verificar = True
                         break
-            if not verificar == True:
+            if not verificar:
                 print("\nNenhum produto encontrado.\n")
                 return
             with open("produtos.txt", "w") as arquivo:
                 for produto in lista:
                     arquivo.write(f"{produto}")
         except FileNotFoundError:
-            print("\nNão há produtos cadastrados.\n")
+            print("Erro: Não há produtos cadastrados.\n")
 
     def update_estoque(self, nome, estoque):
         nome = self.validar_nome(nome)
@@ -75,9 +77,9 @@ class Produtos:
             lista = arquivo.readlines()
             verificar = False
             for i in range(len(lista)):
-                if nome.lower() in lista[i].lower():
+                partes = lista[i].strip().split(" | ") #o split vai seprar cada parte de acordo com o delimitador " | " e vai transformar numa lista
+                if nome.lower() == partes[0].lower():
                     verificar = True
-                    partes = lista[i].strip().split(" | ") #o split vai seprar cada parte de acordo com o delimitador " | " e vai transformar numa lista
                     for j in range(len(partes)):
                         if partes[j].startswith("Estoque:"): #o startswith() verifica se partes[j] começa com o conteúdo que eu coloquei como parâmetro
                            partes[j] = f"Estoque: {estoque}"
@@ -90,7 +92,32 @@ class Produtos:
               arquivo.writelines(lista) #pega cada indice da lista e escreve em cada linha do arquivo 
               print("Estoque atualizado com sucesso!\n")
         except FileNotFoundError:
-            print("Nenhum produto cadastrado.\n")          
+            print("Erro: Não há produtos cadastrados.\n")          
+
+    def update_preco(self, nome, preco):  #mesma lógica de update_estoque
+        nome = self.validar_nome(nome)
+        preco = self.validar_preco(preco)
+        try:
+          with open("produtos.txt", "r") as arquivo:
+              lista = arquivo.readlines()
+              verificar = False
+              for i in range(len(lista)):
+                  partes = lista[i].strip().split(" | ")
+                  if nome.lower() == partes[0].lower():
+                      verificar = True
+                      for j in range(len(partes)):
+                          if partes[j].startswith("Preço:"):
+                              partes[j] = f"Preço: R${preco:.2f}"
+                      lista[i] = " | ".join(partes) + "\n"
+                      break
+              if not verificar:
+                  print("Nenhum produto encontrado.\n")
+                  return
+          with open("produtos.txt", "w") as arquivo:
+              arquivo.writelines(lista)
+              print("\nPreço atualizado com sucesso!\n")
+        except FileNotFoundError:
+            print("Erro: Não há produtos cadastrados.\n")
 
     def validar_nome(self, nome):
             if not nome.replace(" ", "").isalnum(): #letras e números
@@ -115,12 +142,12 @@ class Produtos:
             raise ValueError("O estoque não pode ser menor que 0 (zero).")
         return estoque
 
-    print("===== GERENCIAMENTO DE PRODUTOS =====")
+produtos = Produtos()
+print("===== GERENCIAMENTO DE PRODUTOS =====\n")
 while True:
-    print("\nSelecione uma opção abaixo (digite o número da opção):\n")
-    print("1- Ver produtos cadastrados\n2- Adicionar novo produto\n3- Buscar produto\n4- Excluir produto\n5- Atualizar estoque\n6- Sair\n")
+    print("Selecione uma opção abaixo (digite o número da opção):\n")
+    print("[1]- Ver produtos cadastrados\n[2]- Adicionar novo produto\n[3]- Buscar produto\n[4]- Excluir produto\n[5]- Atualizar preço\n[6]- Atualizar estoque\n[7]- Sair\n")
     opcao = input()
-    produtos = Produtos()
 
     if opcao == '1':
         produtos.ver_produtos()
@@ -156,6 +183,17 @@ while True:
 
     elif opcao == '5':
         while True:
+          try:
+            nome = input("Informe o nome do produto: ")
+            preco = input("Informe o novo preço do produto: ")
+            produtos.update_preco(nome, preco)
+            break
+          except ValueError as e:
+              print("Erro: ", e, " Tente novamente.\n")
+
+
+    elif opcao == '6':
+        while True:
            try:
               nome = input("Digite o nome do produto: ")
               estoque = input("Informe o novo estoque do produto: ")
@@ -164,7 +202,7 @@ while True:
            except ValueError as e:
                print("Erro: ", e, " Tente novamente.\n")
 
-    elif opcao == '6':
+    elif opcao == '7':
         print("\nPrograma encerrado.")
         sys.exit(0)
 
