@@ -1,16 +1,20 @@
 import sys
 
 class Produtos:
+    def __init__(self):
+        self.dicionario = {}
+
     def adicionar(self, nome, preco, estoque):
-        nome = self.set_nome(nome)
-        preco = self.set_preco(preco)
-        estoque = self.set_estoque(estoque)
+        nome = self.validar_nome(nome)
+        preco = self.validar_preco(preco)
+        estoque = self.validar_estoque(estoque)
+        self.dicionario = {'Produto': nome, 'Preço': preco, 'Estoque': estoque} 
         try:
             with open("produtos.txt", "x") as arquivo:
-                arquivo.write(f"{nome} | Preço: R${preco:.2f} | Estoque: {estoque}\n")
-        except FileExistsError:
+                arquivo.write(f"{self.dicionario['Produto']} | Preço: R${self.dicionario['Preço']:.2f} | Estoque: {self.dicionario['Estoque']:.2f}\n")
+        except FileExistsError:          
             with open("produtos.txt", "a") as arquivo:
-                arquivo.write(f"{nome} | Preço: R${preco:.2f} | Estoque: {estoque}\n")
+                arquivo.write(f"{self.dicionario['Produto']} | Preço: R${self.dicionario['Preço']:.2f} | Estoque: {self.dicionario['Estoque']:.2f}\n")
         print("\nProduto adicionado com sucesso!\n")
     
     def ver_produtos(self):
@@ -30,7 +34,7 @@ class Produtos:
             print("\nNão há produtos cadastrados.\n")
 
     def buscar(self, nome):
-        nome = self.set_nome(nome)
+        nome = self.validar_nome(nome)
         try:
             with open("produtos.txt", "r") as arquivo:
                 for linha in arquivo:
@@ -43,7 +47,7 @@ class Produtos:
             print("\nNão há produtos cadastrados.\n")
 
     def excluir(self, nome):
-        nome = self.set_nome(nome)
+        nome = self.validar_nome(nome)
         try:
             verificar = False
             with open("produtos.txt", "r+") as arquivo:
@@ -62,13 +66,44 @@ class Produtos:
                     arquivo.write(f"{produto}")
         except FileNotFoundError:
             print("\nNão há produtos cadastrados.\n")
-                        
-    def set_nome(self, nome):
+
+    def update_estoque(self, nome, novo_estoque):
+       nome = self.validar_nome(nome)
+       novo_estoque = self.validar_estoque(novo_estoque)
+       novo_estoque = str(novo_estoque)
+       try:
+           with open("produtos.txt", "r+") as arquivo:
+               lista = arquivo.readlines()
+               verificar = False
+               for i in range(len(lista)):
+                   if nome.lower() in lista[i].lower():
+                       verificar = True
+                       produto = lista[i][::-1].strip().replace("\n", "")
+                       indice = i
+                       if produto[0].isdigit() and produto[1].isdigit():
+                           produto2 = produto.replace(produto[0], novo_estoque[1]).replace(produto[1], novo_estoque[0])
+                           produto3 = produto2[::-1] + "\n"
+                       else:
+                           print("Erro: O arquivo foi alterado manualmente impossibilitando a atualização do estoque.\n")
+                           return
+               if verificar == False:
+                   print("Nenhum produto encontrado.\n")
+                   return
+               del lista[indice]
+               lista.append(produto3)
+           with open("produtos.txt", "w") as arquivo:
+               for i in range(len(lista)):
+                   arquivo.write(lista[i])
+               print("\nEstoque atualizado com sucesso!\n")
+       except FileNotFoundError:
+           print("Não há produtos cadastrados.\n")            
+
+    def validar_nome(self, nome):
             if not nome.replace(" ", "").isalnum(): #letras e números
                 raise ValueError("O nome do produto não deve conter caracteres especiais.")
             return nome.strip()
     
-    def set_preco(self, preco):
+    def validar_preco(self, preco):
         try:
             preco = float(preco)
         except ValueError:
@@ -77,7 +112,7 @@ class Produtos:
             raise ValueError("O preço do produto não pode ser menor ou igual a 0 (zero).")
         return preco
     
-    def set_estoque(self, estoque):
+    def validar_estoque(self, estoque):
         try:
             estoque = int(estoque)
         except ValueError:
@@ -89,7 +124,7 @@ class Produtos:
     print("===== GERENCIAMENTO DE PRODUTOS =====")
 while True:
     print("\nSelecione uma opção abaixo (digite o número da opção):\n")
-    print("1- Ver produtos cadastrados\n2- Adicionar novo produto\n3- Buscar produto\n4- Excluir produto\n5- Sair\n")
+    print("1- Ver produtos cadastrados\n2- Adicionar novo produto\n3- Buscar produto\n4- Excluir produto\n5- Atualizar estoque\n6- Sair\n")
     opcao = input()
     produtos = Produtos()
 
@@ -123,9 +158,19 @@ while True:
               produtos.excluir(nome)
               break
           except ValueError as e:
-              print("Err0: ", e, " Tente novamente.\n")
+              print("Erro: ", e, " Tente novamente.\n")
 
     elif opcao == '5':
+        while True:
+           try:
+              nome = input("Digite o nome do produto: ")
+              estoque = input("Informe o novo estoque do produto: ")
+              produtos.update_estoque(nome, estoque)
+              break
+           except ValueError as e:
+               print("Erro: ", e, " Tente novamente.\n")
+
+    elif opcao == '6':
         print("\nPrograma encerrado.")
         sys.exit(0)
 
