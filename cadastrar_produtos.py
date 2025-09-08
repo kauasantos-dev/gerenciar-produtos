@@ -67,36 +67,40 @@ class Produtos:
         except FileNotFoundError:
             print("\nNão há produtos cadastrados.\n")
 
-    def update_estoque(self, nome, novo_estoque):
-       nome = self.validar_nome(nome)
-       novo_estoque = self.validar_estoque(novo_estoque)
-       novo_estoque = str(novo_estoque)
-       try:
-           with open("produtos.txt", "r+") as arquivo:
-               lista = arquivo.readlines()
-               verificar = False
-               for i in range(len(lista)):
-                   if nome.lower() in lista[i].lower():
-                       verificar = True
-                       produto = lista[i][::-1].strip().replace("\n", "")
-                       indice = i
-                       if produto[0].isdigit() and produto[1].isdigit():
-                           produto2 = produto.replace(produto[0], novo_estoque[1]).replace(produto[1], novo_estoque[0])
-                           produto3 = produto2[::-1] + "\n"
-                       else:
-                           print("Erro: O arquivo foi alterado manualmente impossibilitando a atualização do estoque.\n")
-                           return
-               if verificar == False:
-                   print("Nenhum produto encontrado.\n")
-                   return
-               del lista[indice]
-               lista.append(produto3)
-           with open("produtos.txt", "w") as arquivo:
-               for i in range(len(lista)):
-                   arquivo.write(lista[i])
-               print("\nEstoque atualizado com sucesso!\n")
-       except FileNotFoundError:
-           print("Não há produtos cadastrados.\n")            
+    def update_estoque(self, nome, estoque):
+        nome = self.validar_nome(nome)
+        estoque = self.validar_estoque(estoque)
+        try:
+          with open("produtos.txt", "r") as arquivo:
+            lista = arquivo.readlines()
+            fatiamento = ""
+            produto = ""
+            verificar = False
+            for i in range(len(lista)):
+                if nome.lower() in lista[i].lower():
+                    verificar = True
+                    linha = lista[i]
+                    indice = i
+                    for letra in linha:
+                        if letra != "|":
+                            fatiamento += letra
+                        else:
+                            produto += fatiamento + "|"
+                            fatiamento = ""
+                            if produto.count("|") == 2:
+                                produto += f" Estoque: {estoque}\n"
+                                break
+            if verificar == False:
+                print("Nenhum produto encontrado.\n")
+                return
+            del lista[indice]
+            lista.append(produto)
+          with open("produtos.txt", "w") as arquivo:
+            for i in range(len(lista)):
+                arquivo.write(lista[i])
+            print("Estoque atualizado com sucesso!\n")
+        except FileNotFoundError:
+            print("Nenhum produto cadastrado.\n")          
 
     def validar_nome(self, nome):
             if not nome.replace(" ", "").isalnum(): #letras e números
