@@ -1,49 +1,72 @@
 import sys
+import json
+import os
+
+base_dir = os.path.dirname(__file__)
+save_to = os.path.join(base_dir, 'produtos.json')
 
 class Produtos:
     def __init__(self):
-        self.dicionario = {}
+        self.__lista = []
 
     def adicionar(self, nome, preco, estoque):
         nome = self.validar_nome(nome)
         preco = self.validar_preco(preco)
         estoque = self.validar_estoque(estoque)
-        self.dicionario = {'Produto': nome, 'Preço': preco, 'Estoque': estoque} 
+        self.produto = {'Produto': nome, 'Preço': round(preco, 2), 'Estoque': estoque} 
         try:
-            with open("produtos.txt", "x") as arquivo:
-                arquivo.write(f"{self.dicionario['Produto']} | Preço: R${self.dicionario['Preço']:.2f} | Estoque: {self.dicionario['Estoque']}\n")
+            with open(save_to, "x", encoding="utf-8") as file:
+                self.__lista.append(self.produto)
+                json.dump(self.__lista, file, indent=2, ensure_ascii=False)
         except FileExistsError:          
-            with open("produtos.txt", "a") as arquivo:
-                arquivo.write(f"{self.dicionario['Produto']} | Preço: R${self.dicionario['Preço']:.2f} | Estoque: {self.dicionario['Estoque']}\n")
+            with open(save_to, "r", encoding="utf-8") as file:
+                self.__lista = json.load(file)
+                self.__lista.append(self.produto)
+            with open(save_to, "w", encoding="utf-8") as file:
+                json.dump(self.__lista, file, indent=2, ensure_ascii=False)
         print("\nProduto adicionado com sucesso!\n")
     
-    def ver_produtos(self):
+    @property
+    def produtos(self):
         try:
-            with open("produtos.txt", "r") as arquivo:
-                conteudo = arquivo.readlines()
-                arquivo.seek(0)
-                if not conteudo:
+            with open(save_to, "r", encoding="utf-8") as file:
+                self.__lista = json.load(file)
+                if not self.__lista:
                     print("Erro: Não há produtos cadastrados.\n")
                     return
                 else:
-                  print("\nProdutos cadastrados:")
-                  for linha in arquivo:
-                      if linha:
-                          print(linha.strip())
+                  print("\nProdutos cadastrados:\n")
+                  for produto in self.__lista:
+                      for chave, valor in produto.items():
+                          if chave.lower() == 'produto':
+                              print(f"{chave}: {valor} |", end=" ")
+                          elif chave.lower() == 'preço':
+                              print(f"{chave}: R${valor:.2f} |", end=" ")
+                          elif chave.lower() == 'estoque':
+                              print(f"{chave}: {valor}")
         except FileNotFoundError:
             print("Erro: Não há produtos cadastrados.\n")
 
     def buscar(self, nome):
         nome = self.validar_nome(nome)
         try:
-            with open("produtos.txt", "r") as arquivo:
-                for linha in arquivo:
-                    partes = linha.strip().split(" | ")
-                    if nome.lower() == partes[0].lower():
-                        print("\nProduto encontrado:")
-                        print(f"{linha}")
-                        return
-                print("\nNenhum produto encontrado.\n")
+            with open(save_to, "r", encoding="utf-8") as file:
+                self.__lista = json.load(file)
+                verificar = False
+                for produto in self.__lista:
+                    for chave, valor in produto.items():
+                        if chave.lower() == 'produto':
+                           if nome.lower() == valor.lower():
+                               verificar = True
+                               print("\nProduto encontrado:\n")
+                               #if chave.lower() == 'produto':
+                                #   print(f"{chave}: {valor} |", end=" ")
+                               #elif chave.lower() == 'preço':
+                                #   print(f"{chave}: R${valor:.2f} |", end=" ")
+                               #elif chave.lower() == 'estoque':
+                                #   print(f"{chave}: {valor}")
+                if not verificar:
+                   print("\nNenhum produto encontrado.\n")
         except FileNotFoundError:
             print("Erro: Não há produtos cadastrados.\n")
 
@@ -51,21 +74,22 @@ class Produtos:
         nome = self.validar_nome(nome)
         try:
             verificar = False
-            with open("produtos.txt", "r+") as arquivo:
-                lista = arquivo.readlines()
-                for i in range(len(lista)):
-                    partes = lista[i].strip().split(" | ")
-                    if nome.lower() == partes[0].lower():
-                        del lista[i]
-                        print("Produto excluído com sucesso!\n")
-                        verificar = True
-                        break
-            if not verificar:
-                print("\nNenhum produto encontrado.\n")
-                return
-            with open("produtos.txt", "w") as arquivo:
-                for produto in lista:
-                    arquivo.write(f"{produto}")
+            with open(save_to, "r", encoding="utf-8") as file:
+                self.__lista = json.load(file)
+                for i in range(len(self.__lista)):
+                    for chave, valor in self.__lista[i].items():
+                        if chave.lower() == 'produto':
+                           if nome.lower() == valor.lower():
+                                verificar = True
+                                indice = i
+                if verificar:
+                    del self.__lista[indice]
+                    print("Produto excluído com sucesso!\n")
+                elif not verificar:
+                    print("\nNenhum produto encontrado.\n")
+                    return
+            with open(save_to, "w", encoding="utf-8") as file:
+                json.dump(self.__lista, file, indent=2, ensure_ascii=False)
         except FileNotFoundError:
             print("Erro: Não há produtos cadastrados.\n")
 
@@ -73,49 +97,45 @@ class Produtos:
         nome = self.validar_nome(nome)
         estoque = self.validar_estoque(estoque)
         try:
-          with open("produtos.txt", "r") as arquivo:
-            lista = arquivo.readlines()
+          with open(save_to, "r", encoding="utf-8") as file:
+            self.__lista = json.load(file)
             verificar = False
-            for i in range(len(lista)):
-                partes = lista[i].strip().split(" | ") #o split vai seprar cada parte de acordo com o delimitador " | " e vai transformar numa lista
-                if nome.lower() == partes[0].lower():
-                    verificar = True
-                    for j in range(len(partes)):
-                        if partes[j].startswith("Estoque:"): #o startswith() verifica se partes[j] começa com o conteúdo que eu coloquei como parâmetro
-                           partes[j] = f"Estoque: {estoque}"
-                    lista[i] = " | ".join(partes) + "\n" #o join serve pra juntar os indices de uma lista em uma única string e colocar algo entre eles, nesse caso o " | "
-                    break
-            if not verificar: #se verificar for False
-                print("Nenhum produto encontrado.\n")
-                return   
-          with open("produtos.txt", "w") as arquivo:
-              arquivo.writelines(lista) #pega cada indice da lista e escreve em cada linha do arquivo 
+            for i in range(len(self.__lista)):
+                for chave, valor in self.__lista[i].items():
+                    if chave.lower() == 'produto':
+                        if nome.lower() == valor.lower():
+                            verificar = True
+                    if chave.lower() == 'estoque' and verificar:
+                        self.__lista[i][chave] = estoque
+                if not verificar:
+                        print("\nNenhum produto encontrado.\n")
+                        return 
+          with open(save_to, "w", encoding="utf-8") as file:
+              json.dump(self.__lista, file, indent=2, ensure_ascii=False) 
               print("Estoque atualizado com sucesso!\n")
         except FileNotFoundError:
-            print("Erro: Não há produtos cadastrados.\n")          
+            print("Erro: Não há produtos cadastrados.\n")      
 
     def update_preco(self, nome, preco):  #mesma lógica de update_estoque
         nome = self.validar_nome(nome)
         preco = self.validar_preco(preco)
         try:
-          with open("produtos.txt", "r") as arquivo:
-              lista = arquivo.readlines()
+          with open(save_to, "r", encoding="utf-8") as file:
+              self.__lista = json.load(file)
               verificar = False
-              for i in range(len(lista)):
-                  partes = lista[i].strip().split(" | ")
-                  if nome.lower() == partes[0].lower():
-                      verificar = True
-                      for j in range(len(partes)):
-                          if partes[j].startswith("Preço:"):
-                              partes[j] = f"Preço: R${preco:.2f}"
-                      lista[i] = " | ".join(partes) + "\n"
-                      break
+              for i in range(len(self.__lista)):
+                  for chave, valor in self.__lista[i]:
+                     if chave.lower() == 'produto':
+                         if nome.lower() == valor.lower():
+                             verificar = True
+                     if chave.lower() == 'preço' and verificar:
+                         self.__lista[i][chave] = preco
               if not verificar:
-                  print("Nenhum produto encontrado.\n")
+                  print("\nNenhum produto encontrado.\n")
                   return
-          with open("produtos.txt", "w") as arquivo:
-              arquivo.writelines(lista)
-              print("\nPreço atualizado com sucesso!\n")
+          with open(save_to, "w", encoding="utf-8") as file:
+                  json.dump(self.__lista, file, indent=2, ensure_ascii=False)
+                  print("\nPreço atualizado com sucesso.\n")
         except FileNotFoundError:
             print("Erro: Não há produtos cadastrados.\n")
 
@@ -145,12 +165,12 @@ class Produtos:
 produtos = Produtos()
 print("===== GERENCIAMENTO DE PRODUTOS =====\n")
 while True:
-    print("Selecione uma opção abaixo (digite o número da opção):\n")
+    print("\nSelecione uma opção abaixo (digite o número da opção):\n")
     print("[1]- Ver produtos cadastrados\n[2]- Adicionar novo produto\n[3]- Buscar produto\n[4]- Excluir produto\n[5]- Atualizar preço\n[6]- Atualizar estoque\n[7]- Sair\n")
     opcao = input()
 
     if opcao == '1':
-        produtos.ver_produtos()
+        produtos.ver_produtos
         
     elif opcao == '2':
         while True:
