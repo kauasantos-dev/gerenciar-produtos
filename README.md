@@ -45,8 +45,8 @@ Antes de executar, certifique-se de ter instalado:
 ## Estrutura do Projeto
 
 ```bash
-produtos/
-├── gerenciar_produtos.py    # Código principal
+gerenciar_produtos/
+├── produtos.py              # Código principal
 ├── lista_produtos.json      # Arquivo de dados (gerado automaticamente)
 └── README.md                # Documentação do projeto
 ```
@@ -64,7 +64,7 @@ cd gerenciar_produtos
 **2. Execute o programa**
 
 ```bash
-python gerenciar_produtos.py
+python produtos.py
 ```
 
 **3. Use o menu interativo**
