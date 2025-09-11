@@ -3,7 +3,7 @@ import json
 import os
 
 base_dir = os.path.dirname(__file__)
-save_to = os.path.join(base_dir, 'produtos.json')
+save_to = os.path.join(base_dir, 'lista_produtos.json')
 
 class Produtos:
     def __init__(self):
@@ -19,22 +19,18 @@ class Produtos:
                 self.__lista.append(self.produto)
                 json.dump(self.__lista, file, indent=2, ensure_ascii=False)
         except FileExistsError:          
-            with open(save_to, "r", encoding="utf-8") as file:
-                self.__lista = json.load(file)
-                self.__lista.append(self.produto)
-            with open(save_to, "w", encoding="utf-8") as file:
-                json.dump(self.__lista, file, indent=2, ensure_ascii=False)
+            self.__lista = self.arquivo_r()
+            self.__lista.append(self.produto)
+            self.arquivo_w(self.__lista)
         print("\nProduto adicionado com sucesso!\n")
     
-    @property
-    def produtos(self):
+    def listar_produtos(self):
         try:
-            with open(save_to, "r", encoding="utf-8") as file:
-                self.__lista = json.load(file)
-                if not self.__lista:
-                    print("Erro: Não há produtos cadastrados.\n")
-                    return
-                else:
+            self.__lista = self.arquivo_r()
+            if not self.__lista:
+                print("Erro: Não há produtos cadastrados.\n")
+                return
+            else:
                   print("\nProdutos cadastrados:\n")
                   for produto in self.__lista:
                       for chave, valor in produto.items():
@@ -50,95 +46,72 @@ class Produtos:
     def buscar(self, nome):
         nome = self.validar_nome(nome)
         try:
-            with open(save_to, "r", encoding="utf-8") as file:
-                self.__lista = json.load(file)
-                verificar = False
-                for i in range(len(self.__lista)):
-                   for chave, valor in self.__lista[i].items():
-                      if chave.lower() == 'produto':
-                         if nome.lower() == valor.lower():
-                            verificar = True
-                            produto = self.__lista[i]
-                            print("Produto encontrado:\n")
-                            for chave2, valor2 in produto.items():
-                               if chave2.lower() == 'produto':
-                                  print(f"{chave2}: {valor2} |", end=" ")
-                               elif chave2.lower() == 'preço':
-                                  print(f"{chave2}: R${valor2:.2f} |", end=" ")
-                               elif chave2.lower() == 'estoque':
-                                  print(f"{chave2}: {valor2}")
-                                  return
-                if not verificar:
-                   print("\nNenhum produto encontrado.\n")
+            self.__lista = self.arquivo_r()
+            verificar = False
+            for i in range(len(self.__lista)):
+                if nome.lower() == self.__lista[i]['Produto'].lower():
+                    verificar = True
+                    produto = self.__lista[i]
+            if verificar:
+               print("Produto encontrado:\n")
+               for chave, valor in produto.items():
+                  if chave.lower() == 'produto':
+                     print(f"{chave}: {valor} |", end=" ")
+                  elif chave.lower() == 'preço':
+                     print(f"{chave}: R${valor:.2f} |", end=" ")
+                  elif chave.lower() == 'estoque':
+                     print(f"{chave}: {valor}")
+                     return
+            else:
+                print("\nNenhum produto encontrado.\n")
+                return
         except FileNotFoundError:
             print("Erro: Não há produtos cadastrados.\n")
 
     def excluir(self, nome):
         nome = self.validar_nome(nome)
         try:
-            verificar = False
-            with open(save_to, "r", encoding="utf-8") as file:
-                self.__lista = json.load(file)
-                for i in range(len(self.__lista)):
-                    for chave, valor in self.__lista[i].items():
-                        if chave.lower() == 'produto':
-                           if nome.lower() == valor.lower():
-                                verificar = True
-                                indice = i
-                if verificar:
-                    del self.__lista[indice]
-                    print("Produto excluído com sucesso!\n")
-                elif not verificar:
-                    print("\nNenhum produto encontrado.\n")
-                    return
-            with open(save_to, "w", encoding="utf-8") as file:
-                json.dump(self.__lista, file, indent=2, ensure_ascii=False)
-        except FileNotFoundError:
-            print("Erro: Não há produtos cadastrados.\n")
-
-    def update_estoque(self, nome, estoque):
-        nome = self.validar_nome(nome)
-        estoque = self.validar_estoque(estoque)
-        try:
-          with open(save_to, "r", encoding="utf-8") as file:
-            self.__lista = json.load(file)
+            self.__lista = self.arquivo_r()
             verificar = False
             for i in range(len(self.__lista)):
-                for chave, valor in self.__lista[i].items():
-                    if chave.lower() == 'produto':
-                        if nome.lower() == valor.lower():
-                            verificar = True
-                    if chave.lower() == 'estoque' and verificar:
-                        self.__lista[i][chave] = estoque
-                if not verificar:
-                        print("\nNenhum produto encontrado.\n")
-                        return 
-          with open(save_to, "w", encoding="utf-8") as file:
-              json.dump(self.__lista, file, indent=2, ensure_ascii=False) 
-              print("Estoque atualizado com sucesso!\n")
+                if nome.lower() == self.__lista[i]['Produto'].lower():
+                    verificar = True
+                    indice = i
+                    break
+            if verificar:
+                del self.__lista[indice]
+            else:
+                print("\nNenhum produto encontrado.\n")
+                return
+            self.arquivo_w(self.__lista)
+            print("\nProduto excluído com sucesso!\n")
         except FileNotFoundError:
-            print("Erro: Não há produtos cadastrados.\n")      
+            print("Erro: Não há produtos cadastrados.\n")     
 
-    def update_preco(self, nome, preco):  #mesma lógica de update_estoque
+    def atualizar(self, nome, numero, opcao):
         nome = self.validar_nome(nome)
-        preco = self.validar_preco(preco)
+        if opcao == '5':
+          numero = self.validar_preco(numero)
+        elif opcao == '6':
+            numero = self.validar_estoque(numero)
         try:
-          with open(save_to, "r", encoding="utf-8") as file:
-              self.__lista = json.load(file)
+              self.__lista = self.arquivo_r()
               verificar = False
               for i in range(len(self.__lista)):
-                  for chave, valor in self.__lista[i].items():
-                     if chave.lower() == 'produto':
-                         if nome.lower() == valor.lower():
-                             verificar = True
-                     if chave.lower() == 'preço' and verificar:
-                         self.__lista[i][chave] = preco
+                  if nome.lower() == self.__lista[i]['Produto'].lower():
+                     verificar = True
+                  if opcao == '5' and verificar:
+                         self.__lista[i]['Preço'] = round(numero, 2)
+                         print("\nPreço atualizado com sucesso!\n")
+                         break
+                  elif opcao == '6' and verificar:
+                         self.__lista[i]['Estoque'] = numero
+                         print("Estoque atualizado com sucesso!\n")
+                         break
               if not verificar:
                   print("\nNenhum produto encontrado.\n")
                   return
-          with open(save_to, "w", encoding="utf-8") as file:
-                  json.dump(self.__lista, file, indent=2, ensure_ascii=False)
-                  print("\nPreço atualizado com sucesso.\n")
+              self.arquivo_w(self.__lista)
         except FileNotFoundError:
             print("Erro: Não há produtos cadastrados.\n")
 
@@ -164,6 +137,14 @@ class Produtos:
         if estoque < 0:
             raise ValueError("O estoque não pode ser menor que 0 (zero).")
         return estoque
+    
+    def arquivo_r(self):
+        with open(save_to, "r", encoding="utf-8") as file:
+            return json.load(file)
+    
+    def arquivo_w(self, lista):
+        with open(save_to, "w", encoding="utf-8") as file:
+            json.dump(lista, file, indent=2, ensure_ascii=False)
 
 produtos = Produtos()
 print("===== GERENCIAMENTO DE PRODUTOS =====\n")
@@ -173,7 +154,7 @@ while True:
     opcao = input()
 
     if opcao == '1':
-        produtos.produtos
+        produtos.listar_produtos()
         
     elif opcao == '2':
         while True:
@@ -209,7 +190,7 @@ while True:
           try:
             nome = input("Informe o nome do produto: ")
             preco = input("Informe o novo preço do produto: ")
-            produtos.update_preco(nome, preco)
+            produtos.atualizar(nome, preco, opcao)
             break
           except ValueError as e:
               print("Erro: ", e, " Tente novamente.\n")
@@ -220,7 +201,7 @@ while True:
            try:
               nome = input("Digite o nome do produto: ")
               estoque = input("Informe o novo estoque do produto: ")
-              produtos.update_estoque(nome, estoque)
+              produtos.atualizar(nome, estoque, opcao)
               break
            except ValueError as e:
                print("Erro: ", e, " Tente novamente.\n")
